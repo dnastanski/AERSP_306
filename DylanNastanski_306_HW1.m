@@ -7,10 +7,12 @@ Nh = length(h); %length of array of heights
 T = zeros(Nh, 1);
 P = zeros(Nh,1);
 rho = zeros(Nh,1);
+V_lift = zeros(Nh, 1);
+V_orbit = zeros(Nh, 1);
 
 %For loop calculating conditions at height
 for n = 1:Nh
-    [T(n), P(n), rho(n)] = StandardAtmosphere(h(n), n);
+    [T(n), P(n), rho(n),V_lift(n),V_orbit(n)] = StandardAtmosphere(h(n));
 end
 
 %plotting Height vs Conditions
@@ -25,9 +27,17 @@ xlabel('Pressure [Pa]')
 subplot(1,3,3)
 plot(rho,h)
 xlabel('Density [kg/m^3]')
+
+figure(2);
+plot(V_lift, h, 'b', V_orbit, h, 'r'); % 'b' for blue, 'r' for red
+ylabel('Height [m]');
+xlabel('Velocity [m/s]'); 
+legend('Lift Velocity', 'Orbit Velocity');
+
+
 %%
 
-function [T,P,rho]=StandardAtmosphere(h, n)
+function [T,P,rho,V_lift,V_orbit]=StandardAtmosphere(h)
 
     %Calculates atmosphere properties for ISA on a standard day.
     
@@ -38,9 +48,12 @@ function [T,P,rho]=StandardAtmosphere(h, n)
     %T temperature (in K)
     %P pressure (in Pa)
     %rho: density (in kg/m3)
-    disp(n)
-    disp(h)
-    g = 9.80665;
+    m = 1500;
+    C_L = 2;
+    S = 30;
+    g0 = 9.80665;
+    Re = 6378.1*10^3;
+    g = g0*(Re/(Re+h))^2;
     R = 287.05;
 
     if and(h>0,h<=11000) % we're in the troposphere
@@ -52,8 +65,11 @@ function [T,P,rho]=StandardAtmosphere(h, n)
         rho0 = 1.225;
       
         T = T0 + a*(h-h0); 
-        P = P0*(T/T0)^(-g/(a*R)); 
-        rho = rho0*(T/T0)^((-g/(a*R))-1); 
+        P = P0*(T/T0)^(-g0/(a*R)); 
+        rho = rho0*(T/T0)^((-g0/(a*R))-1); 
+
+        V_lift = ((2*m*g)/(C_L*rho*S))^0.5;
+        V_orbit = (g*(h+Re))^0.5;
     
         %fprintf('troposphere!!\n'); % you can uncomment this line if you wish
         return;
@@ -65,8 +81,12 @@ function [T,P,rho]=StandardAtmosphere(h, n)
         rho0 = 0.3639;
     
         T = T0;
-        P = P0*exp((-g/(R*T))*(h-h0));
-        rho = rho0*exp((-g/(R*T))*(h-h0));
+        P = P0*exp((-g0/(R*T))*(h-h0));
+        rho = rho0*exp((-g0/(R*T))*(h-h0));
+        
+        V_lift = ((2*m*g)/(C_L*rho*S))^0.5;
+        V_orbit = (g*(h+Re))^0.5;
+    
     
         %fprintf('tropopause!!\n');
         return;
@@ -79,8 +99,11 @@ function [T,P,rho]=StandardAtmosphere(h, n)
         rho0 = 0.08803;
       
         T = T0 + a*(h-h0); 
-        P = P0*(T/T0)^(-g/(a*R)); 
-        rho = rho0*(T/T0)^((-g/(a*R))-1);
+        P = P0*(T/T0)^(-g0/(a*R)); 
+        rho = rho0*(T/T0)^((-g0/(a*R))-1);
+
+        V_lift = ((2*m*g)/(C_L*rho*S))^0.5;
+        V_orbit = (g*(h+Re))^0.5;
     
         %fprintf('stratosphere!!\n'); % you can uncomment this line if you wish
         return;
@@ -93,8 +116,11 @@ function [T,P,rho]=StandardAtmosphere(h, n)
         rho0 = 0.013225;
       
         T = T0 + a*(h-h0); 
-        P = P0*(T/T0)^(-g/(a*R)); 
-        rho = rho0*(T/T0)^((-g/(a*R))-1);
+        P = P0*(T/T0)^(-g0/(a*R)); 
+        rho = rho0*(T/T0)^((-g0/(a*R))-1);
+
+        V_lift = ((2*m*g)/(C_L*rho*S))^0.5;
+        V_orbit = (g*(h+Re))^0.5;
         
         return;
     elseif and(h>47000,h<=51000) % we're in the stratopause
@@ -106,8 +132,11 @@ function [T,P,rho]=StandardAtmosphere(h, n)
         rho0 = 0.00142753;
     
         T = T0;
-        P = P0*exp((-g/(R*T))*(h-h0));
-        rho = rho0*exp((-g/(R*T))*(h-h0));
+        P = P0*exp((-g0/(R*T))*(h-h0));
+        rho = rho0*exp((-g0/(R*T))*(h-h0));
+
+        V_lift = ((2*m*g)/(C_L*rho*S))^0.5;
+        V_orbit = (g*(h+Re))^0.5;
     
         return;
     elseif and(h>51000,h<=71000) % we're in the lower mesosphere
@@ -117,11 +146,14 @@ function [T,P,rho]=StandardAtmosphere(h, n)
         a = -2.8/1000;
         T0 = 270.65;
         P0 = 66.9389;
-        rho0 = 0.0000172341;
+        rho0 = 0.000861606;
       
         T = T0 + a*(h-h0); 
-        P = P0*(T/T0)^(-g/(a*R)); 
-        rho = rho0*(T/T0)^((-g/(a*R))-1);
+        P = P0*(T/T0)^(-g0/(a*R)); 
+        rho = rho0*(T/T0)^((-g0/(a*R))-1);
+
+        V_lift = ((2*m*g)/(C_L*rho*S))^0.5;
+        V_orbit = (g*(h+Re))^0.5;
         
         return;
     elseif and(h>71000,h<=85000) % we're in the upper mesosphere
@@ -134,8 +166,11 @@ function [T,P,rho]=StandardAtmosphere(h, n)
         rho0 = 0.0000642110;
       
         T = T0 + a*(h-h0); 
-        P = P0*(T/T0)^(-g/(a*R)); 
-        rho = rho0*(T/T0)^((-g/(a*R))-1);
+        P = P0*(T/T0)^(-g0/(a*R)); 
+        rho = rho0*(T/T0)^((-g0/(a*R))-1);
+
+        V_lift = ((2*m*g)/(C_L*rho*S))^0.5;
+        V_orbit = (g*(h+Re))^0.5;
         
         return;
     elseif and(h>85000,h<=90000) % we're in the mesopause. The standard atmosphere definition ends at h=86km.
@@ -147,8 +182,11 @@ function [T,P,rho]=StandardAtmosphere(h, n)
         rho0 = 0.00000677222;
     
         T = T0;
-        P = P0*exp((-g/(R*T))*(h-h0));
-        rho = rho0*exp((-g/(R*T))*(h-h0));
+        P = P0*exp((-g0/(R*T))*(h-h0));
+        rho = rho0*exp((-g0/(R*T))*(h-h0));
+
+        V_lift = ((2*m*g)/(C_L*rho*S))^0.5;
+        V_orbit = (g*(h+Re))^0.5;
     
         return;
     else % too high or too low! Return not-a-numbers.
